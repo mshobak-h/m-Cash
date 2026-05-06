@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة الكشك - النسخة السحابية</title>
+    <title>نظام إدارة الكشك - النسخة الشاملة</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
@@ -11,15 +11,6 @@
     <style>
         :root { --primary: #1a73e8; --success: #27ae60; --danger: #d63031; --warning: #f1c40f; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 10px; }
-        
-        /* شاشة تسجيل الدخول */
-        #login-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--primary); color: white; z-index: 10000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        #login-screen input { width: 80%; max-width: 300px; padding: 15px; border-radius: 10px; border: none; margin-bottom: 15px; font-size: 18px; text-align: center; }
-        
         .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .tabs { display: flex; background: #eee; border-radius: 10px; padding: 5px; margin-bottom: 20px; }
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; transition: 0.3s; }
@@ -40,18 +31,13 @@
         .amount-detail { font-size: 12px; color: var(--primary); margin-top: 3px; font-weight: bold; }
         .time-label { font-size: 11px; color: #888; display: block; margin-top: 2px; }
         .grand-total-card { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 12px; margin-bottom: 20px; }
-        #app-content { display: none; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .stat-card { padding: 15px; border-radius: 10px; text-align: center; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <h2 style="margin-bottom: 20px;">نظام إدارة الكشك</h2>
-    <input type="password" id="pin-code" placeholder="أدخل الرقم السري">
-    <button class="btn" style="background: white; color: var(--primary); max-width: 200px;" onclick="checkLogin()">دخول</button>
-</div>
-
-<div class="container" id="app-content">
+<div class="container">
     <div class="tabs">
         <div class="tab active" onclick="showTab('home')">🏠 السجلات</div>
         <div class="tab" onclick="showTab('add')">➕ إضافة</div>
@@ -61,16 +47,27 @@
 
     <div id="home" class="content active">
         <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <input type="text" id="search" placeholder="🔍 بحث..." oninput="draw()">
-            <select id="filter-status" onchange="draw()">
+            <input type="text" id="search" placeholder="🔍 بحث بالاسم أو الرقم..." oninput="draw()" style="flex:2">
+            <select id="filter-status" onchange="draw()" style="flex:1">
                 <option value="all">كل الحالات</option>
                 <option value="done">✅ خالص</option>
-                <option value="debt-us">🔴 لنا</option>
-                <option value="debt-on">🟡 علينا</option>
+                <option value="debt-us">🔴 دين لنا</option>
+                <option value="debt-on">🟡 دين علينا</option>
             </select>
         </div>
         <div style="overflow-x:auto;">
-            <table><thead><tr><th>النوع</th><th>العميل</th><th>التفاصيل</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="table-body"></tbody></table>
+            <table>
+                <thead>
+                    <tr>
+                        <th>النوع</th>
+                        <th>العميل</th>
+                        <th>التفاصيل</th>
+                        <th>الحالة</th>
+                        <th>إجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
         </div>
     </div>
 
@@ -80,7 +77,7 @@
             <select id="type" onchange="toggleFields()">
                 <option value="in">إيداع</option>
                 <option value="out">سحب</option>
-                <option value="other">أخرى</option>
+                <option value="other">أخرى (شحن/رصيد)</option>
             </select>
             <label>اسم العميل</label>
             <input type="text" id="name" required>
@@ -88,34 +85,42 @@
             <div id="standard-info">
                 <label>رقم الهاتف</label><input type="tel" id="phone">
                 <label>المحفظة</label>
-                <select id="wallet"><option value="vodafone">فودافون كاش</option><option value="etisalat">اتصالات كاش</option><option value="instapay">إنستا باي</option></select>
-                <label>العمولة</label><input type="number" id="profit" oninput="calc()">
+                <select id="wallet"><option value="vodafone">فودافون كاش</option><option value="etisalat">اتصالات كاش</option><option value="instapay">إنستا باي</option><option value="orange">أورنج كاش</option></select>
+                <label>العمولة (الربح)</label><input type="number" id="profit" oninput="calc()">
             </div>
             <label id="amt-label">المبلغ المستلم</label><input type="number" id="amt" oninput="calc()" required>
-            <div id="target-group"><label id="target-label">المبلغ المرسل</label><input type="number" id="target" readonly style="background:#f0f0f0;"></div>
+            <div id="target-group"><label id="target-label">المبلغ المرسل</label><input type="number" id="target" readonly style="background:#f0f0f0; font-weight:bold;"></div>
             <label>الحالة</label>
             <select id="status"><option value="done">خالص</option><option value="debt">دين</option></select>
-            <button type="button" class="btn btn-save" onclick="saveOp()">حفظ ومزامنة ☁️</button>
+            <button type="button" class="btn btn-save" onclick="saveOp()">حفظ العملية</button>
         </form>
     </div>
 
     <div id="expenses" class="content">
-        <input type="text" id="exp-note" placeholder="بيان المصروف">
-        <input type="number" id="exp-amt" placeholder="المبلغ">
+        <label>بيان المصروف</label><input type="text" id="exp-note">
+        <label>المبلغ</label><input type="number" id="exp-amt">
         <button class="btn btn-save" onclick="saveExp()">إضافة مصروف</button>
         <table style="margin-top:20px;"><tbody id="expense-body"></tbody></table>
     </div>
 
     <div id="report" class="content">
-        <div class="grand-total-card"><div>صافي الربح العام</div><div id="grand-net" style="font-size: 28px;">0</div></div>
-        <input type="date" id="rep-date" onchange="updateReport()">
-        <div id="rep-profit">0</div>
-        <button class="btn btn-danger" onclick="resetMonth()">تصفير الشهر</button>
+        <div class="grand-total-card"><div>إجمالي صافي الربح العام</div><div id="grand-net" style="font-size: 28px; font-weight: bold;">0</div></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+            <button class="btn" style="background:#2c3e50; color:white;" onclick="exportData()">💾 تصدير بيانات</button>
+            <button class="btn" style="background:#7f8c8d; color:white;" onclick="importData()">🔄 استيراد بيانات</button>
+        </div>
+        <label>تقرير يوم محدد</label><input type="date" id="rep-date" onchange="updateReport()">
+        <div class="stat-grid">
+            <div class="stat-card" style="background:var(--success)">عمولات اليوم: <span id="rep-profit">0</span></div>
+            <div class="stat-card" style="background:var(--danger)">مصروفات اليوم: <span id="rep-exp">0</span></div>
+            <div class="stat-card" style="background:var(--primary)">صافي اليوم: <span id="rep-net">0</span></div>
+        </div>
+        <button class="btn btn-danger" onclick="resetMonth()">تصفير الشهر (حذف الخالص)</button>
     </div>
 </div>
 
 <script>
-    // بياناتك الحقيقية من الصورة
+    // بيانات الربط بـ Firebase من الصور الخاصة بك
     const firebaseConfig = {
         apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
         authDomain: "mmcash-bd27b.firebaseapp.com",
@@ -126,46 +131,47 @@
 
     firebase.initializeApp(firebaseConfig);
     const dbRef = firebase.database();
-    dbRef.ref().keepSynced(true); // تفعيل العمل أوفلاين
 
+    // استبدال نظام الحفظ القديم بنظام السحاب
     let db = { ops: [], exps: [] };
 
-    function checkLogin() {
-        if(document.getElementById('pin-code').value === "1234") {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
-            startSync();
-        } else { alert("خطأ!"); }
-    }
+    // المزامنة اللحظية: أي تعديل في السحاب يظهر هنا فوراً
+    dbRef.ref('data').on('value', (snapshot) => {
+        if (snapshot.val()) {
+            db = snapshot.val();
+            draw();
+            updateReport();
+        }
+    });
 
-    function startSync() {
-        dbRef.ref('data').on('value', (snapshot) => {
-            if (snapshot.val()) { db = snapshot.val(); draw(); updateReport(); }
-        });
-    }
-
-    async function sync() { await dbRef.ref('data').set(db); }
+    document.getElementById('rep-date').valueAsDate = new Date();
 
     function showTab(t) {
         document.querySelectorAll('.tab, .content').forEach(el => el.classList.remove('active'));
         document.querySelector(`[onclick="showTab('${t}')"]`).classList.add('active');
         document.getElementById(t).classList.add('active');
+        if(t === 'home') draw();
+        if(t === 'report') updateReport();
     }
 
     function toggleFields() {
         let type = document.getElementById('type').value;
         document.getElementById('other-detail-group').style.display = type === 'other' ? 'block' : 'none';
         document.getElementById('standard-info').style.display = type === 'other' ? 'none' : 'block';
+        document.getElementById('target-group').style.display = type === 'other' ? 'none' : 'block';
+        document.getElementById('amt-label').innerText = type === 'other' ? "المبلغ" : "المبلغ المستلم";
         calc();
     }
 
     function calc() {
+        let type = document.getElementById('type').value;
         let a = parseFloat(document.getElementById('amt').value) || 0;
         let p = parseFloat(document.getElementById('profit').value) || 0;
+        document.getElementById('target-label').innerText = type === 'in' ? "المبلغ المرسل" : "للعميل كاش";
         document.getElementById('target').value = a - p;
     }
 
-    async function saveOp() {
+    function saveOp() {
         let type = document.getElementById('type').value;
         let op = {
             id: Date.now(), type, name: document.getElementById('name').value,
@@ -178,25 +184,55 @@
             date: new Date().toISOString().split('T')[0],
             time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})
         };
-        db.ops.unshift(op);
-        await sync();
-        document.getElementById('op-form').reset();
+        db.ops.unshift(op); save(); document.getElementById('op-form').reset(); toggleFields();
+    }
+
+    function saveExp() {
+        let exp = { id: Date.now(), note: document.getElementById('exp-note').value, amt: parseFloat(document.getElementById('exp-amt').value) || 0, date: new Date().toISOString().split('T')[0] };
+        db.exps.unshift(exp); save(); document.getElementById('exp-note').value = ''; document.getElementById('exp-amt').value = '';
+    }
+
+    function save() {
+        // الحفظ المحلي + الرفع للسحاب
+        localStorage.setItem('kiosk_vfinal', JSON.stringify(db));
+        dbRef.ref('data').set(db); 
     }
 
     function draw() {
+        let q = document.getElementById('search').value.toLowerCase();
+        let f = document.getElementById('filter-status').value;
         let h = '';
-        db.ops.forEach(x => {
-            let sClass = x.status === 'done' ? 'status-done' : 'status-debt-us';
-            h += `<tr><td>${x.type}</td><td>${x.name}</td><td>${x.wallet} | ${x.amt}ج</td><td><span class="${sClass}">${x.status}</span></td><td><button onclick="delOp(${x.id})">🗑</button></td></tr>`;
+        db.ops.filter(x => {
+            let st = x.status === 'done' ? 'done' : (x.type === 'in' || x.type === 'other' ? 'debt-us' : 'debt-on');
+            return (x.name.toLowerCase().includes(q) || x.phone.includes(q)) && (f === 'all' || f === st);
+        }).forEach(x => {
+            let sClass = x.status === 'done' ? 'status-done' : (x.type === 'in' || x.type === 'other' ? 'status-debt-us' : 'status-debt-on');
+            let sText = x.status === 'done' ? 'خالص' : (x.type === 'in' || x.type === 'other' ? `لنا: ${x.target}` : `علينا: ${x.target}`);
+            let typeLabel = x.type === 'in' ? 'إيداع' : (x.type === 'out' ? 'سحب' : 'أخرى');
+            let detailTxt = x.type === 'other' ? x.wallet : `${x.wallet} (${x.type==='in'?'مرسل:':'كاش:'} ${x.target})`;
+            h += `<tr onclick="showFullDetails(${x.id})" style="cursor:pointer"><td><b>${typeLabel}</b></td><td><b>${x.name}</b><span class="time-label">${x.date}</span></td><td>${detailTxt}</td><td><span class="${sClass}">${sText}</span></td><td><button onclick="event.stopPropagation(); delOp(${x.id})">🗑</button></td></tr>`;
         });
         document.getElementById('table-body').innerHTML = h;
+        let eh = '';
+        db.exps.forEach(x => { eh += `<tr><td>${x.date}</td><td>${x.note}</td><td>${x.amt} ج</td><td><button onclick="delExp(${x.id})">🗑</button></td></tr>`; });
+        document.getElementById('expense-body').innerHTML = eh;
     }
 
-    async function delOp(id) { if(confirm('حذف؟')) { db.ops = db.ops.filter(x=>x.id!==id); await sync(); } }
-    async function saveExp() { 
-        db.exps.unshift({id: Date.now(), note: document.getElementById('exp-note').value, amt: parseFloat(document.getElementById('exp-amt').value)});
-        await sync();
+    function updateReport() {
+        let targetDate = document.getElementById('rep-date').value;
+        let totalP = db.ops.reduce((a, b) => a + (b.status === 'done' ? b.profit : 0), 0);
+        let totalE = db.exps.reduce((a, b) => a + b.amt, 0);
+        document.getElementById('grand-net').innerText = (totalP - totalE).toFixed(2) + " ج";
+        let dP = db.ops.filter(i => i.date === targetDate).reduce((a, b) => a + (b.status === 'done' ? b.profit : 0), 0);
+        let dE = db.exps.filter(i => i.date === targetDate).reduce((a, b) => a + b.amt, 0);
+        document.getElementById('rep-profit').innerText = dP; document.getElementById('rep-exp').innerText = dE; document.getElementById('rep-net').innerText = dP - dE;
     }
+
+    function delOp(id) { if(confirm('حذف؟')) { db.ops = db.ops.filter(x=>x.id!==id); save(); draw(); } }
+    function delExp(id) { if(confirm('حذف؟')) { db.exps = db.exps.filter(x=>x.id!==id); save(); draw(); } }
+    
+    // تشغيل التطبيق لأول مرة
+    draw();
 </script>
 </body>
 </html>
