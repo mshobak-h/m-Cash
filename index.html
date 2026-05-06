@@ -18,14 +18,7 @@ table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
 </style>
 </head>
-<body><!-- LOGIN --><div id="login-screen" style="display:flex;align-items:center;justify-content:center;height:100vh;">
-  <div style="background:white;padding:20px;border-radius:10px;width:300px;text-align:center;">
-    <h3>🔐 دخول النظام</h3>
-    <input type="password" id="pass" placeholder="كلمة السر">
-    <button onclick="login()" class="btn">دخول</button>
-    <p id="err" style="color:red"></p>
-  </div>
-</div><div id="app" style="display:none;">
+</div><div id="app" style="display:block;">
 <div class="container"><div class="tabs">
 <div class="tab active" onclick="showTab('home')">🏠 السجلات</div>
 <div class="tab" onclick="showTab('add')">➕ إضافة</div>
@@ -154,18 +147,7 @@ window.showTab=t=>{
     firebase.initializeApp(firebaseConfig);
     const dbRef = firebase.database();
 
-    // 2. دالة الدخول بالباسورد (2222)
-    function login() {
-        const pass = document.getElementById('pass').value;
-        if (pass === "2222") { 
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-            initSync(); // بدء جلب البيانات فور الدخول
-        } else {
-            document.getElementById('err').innerText = "كلمة السر خطأ!";
-        }
-    }
-
+initSync();
     // 3. المزامنة اللحظية مع السحاب
     function initSync() {
         dbRef.ref('data').on('value', (snapshot) => {
