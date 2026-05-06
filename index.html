@@ -18,26 +18,28 @@ table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
 </style>
 </head>
-<body><!-- LOGIN --><div id="login-screen" style="display:flex;align-items:center;justify-content:center;height:100vh;">
-  <div style="background:white;padding:20px;border-radius:10px;width:300px;text-align:center;">
-    <h3>🔐 دخول النظام</h3>
-    <input type="password" id="pass" placeholder="كلمة السر">
-    <button onclick="login()" class="btn">دخول</button>
-    <p id="err" style="color:red"></p>
-  </div>
-</div><div id="app" style="display:none;">
-<div class="container"><div class="tabs">
+<body>
+
+<!-- APP مباشر بدون تسجيل دخول -->
+<div id="app">
+<div class="container">
+
+<div class="tabs">
 <div class="tab active" onclick="showTab('home')">🏠 السجلات</div>
 <div class="tab" onclick="showTab('add')">➕ إضافة</div>
 <div class="tab" onclick="showTab('expenses')">💸 المصروفات</div>
 <div class="tab" onclick="showTab('report')">📈 التقارير</div>
-</div><div id="home" class="content active">
+</div>
+
+<div id="home" class="content active">
 <input id="search" placeholder="بحث..." oninput="draw()">
 <table>
 <thead><tr><th>العميل</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
 <tbody id="table-body"></tbody>
 </table>
-</div><div id="add" class="content">
+</div>
+
+<div id="add" class="content">
 <input id="name" placeholder="اسم العميل">
 <input id="phone" placeholder="الهاتف">
 <input id="amt" type="number" placeholder="المبلغ">
@@ -46,16 +48,24 @@ th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
 <option value="debt">دين</option>
 </select>
 <button class="btn" onclick="saveOp()">حفظ العملية</button>
-</div><div id="expenses" class="content">
+</div>
+
+<div id="expenses" class="content">
 <input id="exp-note" placeholder="بيان">
 <input id="exp-amt" type="number" placeholder="المبلغ">
 <button class="btn" onclick="saveExp()">إضافة مصروف</button>
 <ul id="expense-body"></ul>
-</div><div id="report" class="content">
+</div>
+
+<div id="report" class="content">
 <h3>إجمالي الربح</h3>
 <div id="grand-net">0</div>
-</div></div>
-</div><script type="module">
+</div>
+
+</div>
+</div>
+
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -141,13 +151,12 @@ window.showTab=t=>{
  document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
  document.getElementById(t).classList.add('active');
 }
-</script><script>
-const PASSWORD="1234";
-function login(){
- if(pass.value===PASSWORD){login-screen.style.display='none';app.style.display='block'}
- else err.innerText='كلمة السر غلط'
-}
+</script>
+
+<script>
 window.addEventListener('offline',()=>alert('📴 أوفلاين'));
 window.addEventListener('online',()=>alert('📶 تم الاتصال - مزامنة'));
-</script></body>
+</script>
+
+</body>
 </html>
