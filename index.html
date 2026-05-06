@@ -141,13 +141,54 @@ window.showTab=t=>{
  document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
  document.getElementById(t).classList.add('active');
 }
-</script><script>
-const PASSWORD="2222;
-function login(){
- if(pass.value===PASSWORD){login-screen.style.display='none';app.style.display='block'}
- else err.innerText='كلمة السر غلط'
-}
-window.addEventListener('offline',()=>alert('📴 أوفلاين'));
-window.addEventListener('online',()=>alert('📶 تم الاتصال - مزامنة'));
+<script>
+    // 1. إعدادات قاعدة البيانات (Firebase)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
+        authDomain: "mmcash-bd27b.firebaseapp.com",
+        databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
+        projectId: "mmcash-bd27b",
+        appId: "1:887509044320:web:edefedce50..."
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database();
+
+    // 2. دالة الدخول بالباسورد (2222)
+    function login() {
+        const pass = document.getElementById('pass').value;
+        if (pass === "2222") { 
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            initSync(); // بدء جلب البيانات فور الدخول
+        } else {
+            document.getElementById('err').innerText = "كلمة السر خطأ!";
+        }
+    }
+
+    // 3. المزامنة اللحظية مع السحاب
+    function initSync() {
+        dbRef.ref('data').on('value', (snapshot) => {
+            if (snapshot.val()) {
+                db = snapshot.val();
+                draw(); // تحديث الجدول
+                if(typeof updateReport === 'function') updateReport(); // تحديث التقارير
+            }
+        });
+    }
+
+    // 4. دالة الحفظ الموحدة (للسحاب وللمتصفح)
+    function save() {
+        dbRef.ref('data').set(db);
+        localStorage.setItem('kiosk_vfinal', JSON.stringify(db));
+    }
+
+    // 5. مراقبة حالة الاتصال بالإنترنت
+    window.addEventListener('offline', () => alert('أنت الآن غير متصل بالإنترنت - سيتم الحفظ محلياً'));
+    window.addEventListener('online', () => {
+        alert('تم استعادة الاتصال - جاري المزامنة مع السحاب');
+        save();
+    });
+</script>
 </script></body>
 </html>
