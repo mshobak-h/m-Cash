@@ -143,34 +143,52 @@ window.showTab=t=>{
         projectId: "mmcash-bd27b",
         appId: "1:887509044320:web:edefedce50..."
     };
+<script>
+    // 1. بيانات الربط (Mmcash)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
+        authDomain: "mmcash-bd27b.firebaseapp.com",
+        databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
+        projectId: "mmcash-bd27b",
+        appId: "1:887509044320:web:edefedce5c1fe047510705"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const dbRef = firebase.database();
+    let db = { ops: [], exps: [] };
 
-initSync();
-    // 3. المزامنة اللحظية مع السحاب
+    // 2. تشغيل المزامنة فوراً
+    initSync();
+
     function initSync() {
         dbRef.ref('data').on('value', (snapshot) => {
             if (snapshot.val()) {
                 db = snapshot.val();
-                draw(); // تحديث الجدول
-                if(typeof updateReport === 'function') updateReport(); // تحديث التقارير
+                if(typeof draw === 'function') draw(); 
+                if(typeof updateReport === 'function') updateReport();
             }
         });
     }
 
-    // 4. دالة الحفظ الموحدة (للسحاب وللمتصفح)
+    // 3. دالة التنقل بين التابات (التي كانت ناقصة)
+    function showTab(t) {
+        // إخفاء كل المحتويات وإزالة اللون النشط من الأزرار
+        document.querySelectorAll('.tab, .content').forEach(el => el.classList.remove('active'));
+        
+        // إظهار التاب المختار وتلوين الزر الخاص به
+        document.querySelector(`[onclick="showTab('${t}')"]`).classList.add('active');
+        document.getElementById(t).classList.add('active');
+    }
+
+    // 4. دالة الحفظ
     function save() {
         dbRef.ref('data').set(db);
         localStorage.setItem('kiosk_vfinal', JSON.stringify(db));
     }
 
-    // 5. مراقبة حالة الاتصال بالإنترنت
-    window.addEventListener('offline', () => alert('أنت الآن غير متصل بالإنترنت - سيتم الحفظ محلياً'));
+    window.addEventListener('offline', () => alert('أنت أوفلاين حالياً'));
     window.addEventListener('online', () => {
-        alert('تم استعادة الاتصال - جاري المزامنة مع السحاب');
+        alert('تم الاتصال - جاري المزامنة');
         save();
     });
 </script>
-</script></body>
-</html>
