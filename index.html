@@ -9,58 +9,126 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
     <style>
-        /* هنا نضع نفس التصميم الأصلي لملفك لضمان عدم تغيير الشكل */
         :root { --primary: #1a73e8; --success: #27ae60; --danger: #d63031; --warning: #f1c40f; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 10px; }
+        
+        /* شاشة تسجيل الدخول */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--primary); color: white; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #login-screen input { width: 80%; max-width: 300px; padding: 15px; border-radius: 10px; border: none; margin-bottom: 15px; font-size: 18px; text-align: center; }
+        
         .container { max-width: 1100px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        /* شاشة دخول بسيطة */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); color: white; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #login-screen input { padding: 15px; border-radius: 10px; border: none; margin-bottom: 10px; text-align: center; }
-        #app-content { display: none; }
-        /* استكمال ستايل ملفك الأصلي */
         .tabs { display: flex; background: #eee; border-radius: 10px; padding: 5px; margin-bottom: 20px; }
         .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; color: #666; transition: 0.3s; }
         .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .content { display: none; }
         .content.active { display: block; }
         input, select { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; color: #444; }
         .btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
         .btn-save { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #f4f4f4; padding: 10px; font-size: 13px; color: #666; border-bottom: 2px solid #ddd; }
         td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px; }
+        .status-done { background: var(--success); color: white; padding: 3px 8px; border-radius: 5px; font-size: 12px; }
+        .status-debt-us { background: var(--danger); color: white; padding: 3px 8px; border-radius: 5px; font-size: 12px; }
+        .status-debt-on { background: var(--warning); color: black; padding: 3px 8px; border-radius: 5px; font-size: 12px; }
+        .amount-detail { font-size: 12px; color: var(--primary); margin-top: 3px; font-weight: bold; }
+        .time-label { font-size: 11px; color: #888; display: block; margin-top: 2px; }
+        .grand-total-card { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 12px; margin-bottom: 20px; }
+        #app-content { display: none; }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
-    <h2>نظام الكشك</h2>
-    <input type="password" id="pin-code" placeholder="الرقم السري">
-    <button class="btn" style="background:white; color:var(--primary); width:150px" onclick="checkLogin()">دخول</button>
+    <h2 style="margin-bottom: 20px;">نظام إدارة الكشك</h2>
+    <input type="password" id="pin-code" placeholder="أدخل الرقم السري">
+    <button class="btn" style="background: white; color: var(--primary); max-width: 200px;" onclick="checkLogin()">دخول</button>
 </div>
 
 <div class="container" id="app-content">
     <div class="tabs">
         <div class="tab active" onclick="showTab('home')">🏠 السجلات</div>
         <div class="tab" onclick="showTab('add')">➕ إضافة</div>
-    </div>
+        <div class="tab" onclick="showTab('expenses')">💸 المصروفات</div>
+        <div class="tab" onclick="showTab('report')">📈 التقارير</div>
     </div>
 
+    <div id="home" class="content active">
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <input type="text" id="search" placeholder="🔍 بحث..." oninput="draw()">
+            <select id="filter-status" onchange="draw()">
+                <option value="all">كل الحالات</option>
+                <option value="done">✅ خالص</option>
+                <option value="debt-us">🔴 لنا</option>
+                <option value="debt-on">🟡 علينا</option>
+            </select>
+        </div>
+        <div style="overflow-x:auto;">
+            <table><thead><tr><th>النوع</th><th>العميل</th><th>التفاصيل</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="table-body"></tbody></table>
+        </div>
+    </div>
+
+    <div id="add" class="content">
+        <form id="op-form">
+            <label>نوع العملية</label>
+            <select id="type" onchange="toggleFields()">
+                <option value="in">إيداع</option>
+                <option value="out">سحب</option>
+                <option value="other">أخرى</option>
+            </select>
+            <label>اسم العميل</label>
+            <input type="text" id="name" required>
+            <div id="other-detail-group" style="display:none;"><label>البيان</label><input type="text" id="other-detail"></div>
+            <div id="standard-info">
+                <label>رقم الهاتف</label><input type="tel" id="phone">
+                <label>المحفظة</label>
+                <select id="wallet"><option value="vodafone">فودافون كاش</option><option value="etisalat">اتصالات كاش</option><option value="instapay">إنستا باي</option></select>
+                <label>العمولة</label><input type="number" id="profit" oninput="calc()">
+            </div>
+            <label id="amt-label">المبلغ المستلم</label><input type="number" id="amt" oninput="calc()" required>
+            <div id="target-group"><label id="target-label">المبلغ المرسل</label><input type="number" id="target" readonly style="background:#f0f0f0;"></div>
+            <label>الحالة</label>
+            <select id="status"><option value="done">خالص</option><option value="debt">دين</option></select>
+            <button type="button" class="btn btn-save" onclick="saveOp()">حفظ ومزامنة ☁️</button>
+        </form>
+    </div>
+
+    <div id="expenses" class="content">
+        <input type="text" id="exp-note" placeholder="بيان المصروف">
+        <input type="number" id="exp-amt" placeholder="المبلغ">
+        <button class="btn btn-save" onclick="saveExp()">إضافة مصروف</button>
+        <table style="margin-top:20px;"><tbody id="expense-body"></tbody></table>
+    </div>
+
+    <div id="report" class="content">
+        <div class="grand-total-card"><div>صافي الربح العام</div><div id="grand-net" style="font-size: 28px;">0</div></div>
+        <input type="date" id="rep-date" onchange="updateReport()">
+        <div id="rep-profit">0</div>
+        <button class="btn btn-danger" onclick="resetMonth()">تصفير الشهر</button>
+    </div>
+</div>
+
 <script>
-    // الجزء الحاسم: استبدل هذه البيانات بالتي حصلت عليها من Firebase Console
+    // بياناتك الحقيقية من الصورة
     const firebaseConfig = {
-        apiKey: "ضع_هنا_API_KEY",
-        authDomain: "مشروعك.firebaseapp.com",
-        databaseURL: "https://مشروعك.firebaseio.com",
-        projectId: "مشروعك",
-        appId: "1:xxx:web:xxx"
+        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
+        authDomain: "mmcash-bd27b.firebaseapp.com",
+        databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
+        projectId: "mmcash-bd27b",
+        appId: "1:887509044320:web:edefedce50..."
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    
-    // تفعيل العمل أوفلاين
-    db.ref().keepSynced(true);
+    const dbRef = firebase.database();
+    dbRef.ref().keepSynced(true); // تفعيل العمل أوفلاين
+
+    let db = { ops: [], exps: [] };
 
     function checkLogin() {
         if(document.getElementById('pin-code').value === "1234") {
@@ -71,19 +139,64 @@
     }
 
     function startSync() {
-        db.ref('data').on('value', (s) => {
-            if(s.val()) { 
-                window.kioskData = s.val();
-                drawTable(); // دالة رسم الجدول الأصلية في ملفك
-            }
+        dbRef.ref('data').on('value', (snapshot) => {
+            if (snapshot.val()) { db = snapshot.val(); draw(); updateReport(); }
         });
     }
 
-    async function syncToCloud() {
-        await db.ref('data').set(window.kioskData);
+    async function sync() { await dbRef.ref('data').set(db); }
+
+    function showTab(t) {
+        document.querySelectorAll('.tab, .content').forEach(el => el.classList.remove('active'));
+        document.querySelector(`[onclick="showTab('${t}')"]`).classList.add('active');
+        document.getElementById(t).classList.add('active');
     }
-    
-    // ملاحظة: تأكد من تعديل دوال الحفظ (saveOp) لتنادي syncToCloud() بدلاً من localStorage
+
+    function toggleFields() {
+        let type = document.getElementById('type').value;
+        document.getElementById('other-detail-group').style.display = type === 'other' ? 'block' : 'none';
+        document.getElementById('standard-info').style.display = type === 'other' ? 'none' : 'block';
+        calc();
+    }
+
+    function calc() {
+        let a = parseFloat(document.getElementById('amt').value) || 0;
+        let p = parseFloat(document.getElementById('profit').value) || 0;
+        document.getElementById('target').value = a - p;
+    }
+
+    async function saveOp() {
+        let type = document.getElementById('type').value;
+        let op = {
+            id: Date.now(), type, name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value || '-',
+            wallet: type === 'other' ? document.getElementById('other-detail').value : document.getElementById('wallet').value,
+            amt: parseFloat(document.getElementById('amt').value) || 0,
+            profit: type === 'other' ? 0 : (parseFloat(document.getElementById('profit').value) || 0),
+            target: type === 'other' ? parseFloat(document.getElementById('amt').value) : (parseFloat(document.getElementById('target').value) || 0),
+            status: document.getElementById('status').value,
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})
+        };
+        db.ops.unshift(op);
+        await sync();
+        document.getElementById('op-form').reset();
+    }
+
+    function draw() {
+        let h = '';
+        db.ops.forEach(x => {
+            let sClass = x.status === 'done' ? 'status-done' : 'status-debt-us';
+            h += `<tr><td>${x.type}</td><td>${x.name}</td><td>${x.wallet} | ${x.amt}ج</td><td><span class="${sClass}">${x.status}</span></td><td><button onclick="delOp(${x.id})">🗑</button></td></tr>`;
+        });
+        document.getElementById('table-body').innerHTML = h;
+    }
+
+    async function delOp(id) { if(confirm('حذف؟')) { db.ops = db.ops.filter(x=>x.id!==id); await sync(); } }
+    async function saveExp() { 
+        db.exps.unshift({id: Date.now(), note: document.getElementById('exp-note').value, amt: parseFloat(document.getElementById('exp-amt').value)});
+        await sync();
+    }
 </script>
 </body>
 </html>
