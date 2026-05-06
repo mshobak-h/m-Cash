@@ -18,7 +18,14 @@ table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
 </style>
 </head>
-</div><div id="app" style="display:block;">
+<body><!-- LOGIN --><div id="login-screen" style="display:flex;align-items:center;justify-content:center;height:100vh;">
+  <div style="background:white;padding:20px;border-radius:10px;width:300px;text-align:center;">
+    <h3>🔐 دخول النظام</h3>
+    <input type="password" id="pass" placeholder="كلمة السر">
+    <button onclick="login()" class="btn">دخول</button>
+    <p id="err" style="color:red"></p>
+  </div>
+</div><div id="app" style="display:none;">
 <div class="container"><div class="tabs">
 <div class="tab active" onclick="showTab('home')">🏠 السجلات</div>
 <div class="tab" onclick="showTab('add')">➕ إضافة</div>
@@ -134,61 +141,13 @@ window.showTab=t=>{
  document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
  document.getElementById(t).classList.add('active');
 }
-<script>
-    // 1. إعدادات قاعدة البيانات (Firebase)
-    const firebaseConfig = {
-        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
-        authDomain: "mmcash-bd27b.firebaseapp.com",
-        databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
-        projectId: "mmcash-bd27b",
-        appId: "1:887509044320:web:edefedce50..."
-    };
-<script>
-    // 1. بيانات الربط (Mmcash)
-    const firebaseConfig = {
-        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
-        authDomain: "mmcash-bd27b.firebaseapp.com",
-        databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
-        projectId: "mmcash-bd27b",
-        appId: "1:887509044320:web:edefedce5c1fe047510705"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const dbRef = firebase.database();
-    let db = { ops: [], exps: [] };
-
-    // 2. تشغيل المزامنة فوراً
-    initSync();
-
-    function initSync() {
-        dbRef.ref('data').on('value', (snapshot) => {
-            if (snapshot.val()) {
-                db = snapshot.val();
-                if(typeof draw === 'function') draw(); 
-                if(typeof updateReport === 'function') updateReport();
-            }
-        });
-    }
-
-    // 3. دالة التنقل بين التابات (التي كانت ناقصة)
-    function showTab(t) {
-        // إخفاء كل المحتويات وإزالة اللون النشط من الأزرار
-        document.querySelectorAll('.tab, .content').forEach(el => el.classList.remove('active'));
-        
-        // إظهار التاب المختار وتلوين الزر الخاص به
-        document.querySelector(`[onclick="showTab('${t}')"]`).classList.add('active');
-        document.getElementById(t).classList.add('active');
-    }
-
-    // 4. دالة الحفظ
-    function save() {
-        dbRef.ref('data').set(db);
-        localStorage.setItem('kiosk_vfinal', JSON.stringify(db));
-    }
-
-    window.addEventListener('offline', () => alert('أنت أوفلاين حالياً'));
-    window.addEventListener('online', () => {
-        alert('تم الاتصال - جاري المزامنة');
-        save();
-    });
-</script>
+</script><script>
+const PASSWORD="1234";
+function login(){
+ if(pass.value===PASSWORD){login-screen.style.display='none';app.style.display='block'}
+ else err.innerText='كلمة السر غلط'
+}
+window.addEventListener('offline',()=>alert('📴 أوفلاين'));
+window.addEventListener('online',()=>alert('📶 تم الاتصال - مزامنة'));
+</script></body>
+</html>
