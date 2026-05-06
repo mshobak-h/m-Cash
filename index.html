@@ -3,6 +3,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>نظام إدارة الكشك - النسخة الكاملة أونلاين</title>
+
 <style>
 :root { --primary: #1a73e8; --success: #27ae60; --danger: #d63031; --warning: #f1c40f; --bg: #f8f9fa; }
 body { font-family: 'Segoe UI', Tahoma; background-color: var(--bg); margin: 0; padding: 10px; }
@@ -17,10 +18,12 @@ input, select { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
 </style>
+
 </head>
+
 <body>
 
-<!-- APP مباشر بدون تسجيل دخول -->
+<!-- APP بدون تسجيل دخول -->
 <div id="app">
 <div class="container">
 
@@ -34,7 +37,9 @@ th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; }
 <div id="home" class="content active">
 <input id="search" placeholder="بحث..." oninput="draw()">
 <table>
-<thead><tr><th>العميل</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
+<thead>
+<tr><th>العميل</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr>
+</thead>
 <tbody id="table-body"></tbody>
 </table>
 </div>
@@ -97,66 +102,46 @@ onSnapshot(collection(db, "expenses"), snap=>{
  draw(); updateReport();
 });
 
+/* ✅ تصليح الإدخال */
 window.saveOp = async ()=>{
  await addDoc(collection(db,"operations"),{
-  name:name.value,
-  phone:phone.value,
-  amt:+amt.value,
-  status:status.value,
-  date:new Date().toISOString().split('T')[0]
+  name: document.getElementById("name").value,
+  phone: document.getElementById("phone").value,
+  amt: +document.getElementById("amt").value,
+  status: document.getElementById("status").value,
+  date: new Date().toISOString().split('T')[0]
  });
- name.value=""; phone.value=""; amt.value="";
+
+ document.getElementById("name").value="";
+ document.getElementById("phone").value="";
+ document.getElementById("amt").value="";
 }
 
+/* ✅ تصليح المصروفات */
 window.saveExp = async ()=>{
  await addDoc(collection(db,"expenses"),{
-  note:exp-note.value,
-  amt:+exp-amt.value,
-  date:new Date().toISOString().split('T')[0]
+  note: document.getElementById("exp-note").value,
+  amt: +document.getElementById("exp-amt").value,
+  date: new Date().toISOString().split('T')[0]
  });
- exp-note.value=""; exp-amt.value="";
+
+ document.getElementById("exp-note").value="";
+ document.getElementById("exp-amt").value="";
 }
 
 window.delOp = async id=> await deleteDoc(doc(db,"operations",id));
 window.markAsDone = async id=> await updateDoc(doc(db,"operations",id),{status:'done'});
 
 function draw(){
- let q=search.value.toLowerCase();
+ let q=document.getElementById("search").value.toLowerCase();
  let h="";
- dbLocal.ops.filter(x=>x.name.toLowerCase().includes(q)).forEach(x=>{
+
+ dbLocal.ops
+ .filter(x=>x.name.toLowerCase().includes(q))
+ .forEach(x=>{
   h+=`<tr>
   <td>${x.name}</td>
   <td>${x.amt}</td>
   <td>${x.status}</td>
   <td>
-   ${x.status==='debt'?`<button onclick="markAsDone('${x.id}')">✔</button>`:''}
-   <button onclick="delOp('${x.id}')">🗑</button>
-  </td>
-  </tr>`;
- });
- table-body.innerHTML=h;
-
- let eh="";
- dbLocal.exps.forEach(e=>eh+=`<li>${e.note} - ${e.amt}</li>`);
- expense-body.innerHTML=eh;
-}
-
-function updateReport(){
- let p=dbLocal.ops.reduce((a,b)=>a+(b.status==='done'?b.amt:0),0);
- let e=dbLocal.exps.reduce((a,b)=>a+b.amt,0);
- grand-net.innerText=p-e;
-}
-
-window.showTab=t=>{
- document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
- document.getElementById(t).classList.add('active');
-}
-</script>
-
-<script>
-window.addEventListener('offline',()=>alert('📴 أوفلاين'));
-window.addEventListener('online',()=>alert('📶 تم الاتصال - مزامنة'));
-</script>
-
-</body>
-</html>
+   ${x.status==='debt'?`<button onclick="markAsDone('${x.id}')">✔
