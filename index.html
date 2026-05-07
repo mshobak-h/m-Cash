@@ -92,7 +92,7 @@
                     <option value="vodafone">فودافون كاش</option>
                     <option value="etisalat">اتصالات كاش</option>
                     <option value="instapay">إنستا باي</option>
-                    <option value="orange">أورنج كاش</option>
+                    <option value="orange">اكسس باي</option>
                 </select>
                 <label>العمولة (الربح)</label>
                 <input type="number" id="profit" oninput="calc()">
@@ -142,142 +142,52 @@
         <button class="btn btn-danger" onclick="resetMonth()">تصفير الشهر (حذف الخالص)</button>
     </div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('kiosk_vfinal')) || { ops: [], exps: [] };
-    document.getElementById('rep-date').valueAsDate = new Date();
+    const firebaseConfig = {
+        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
+        authDomain: "mmcash-bd27b.firebaseapp.com",
+        databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
+        projectId: "mmcash-bd27b",
+        appId: "1:887509044320:web:edefedce5c1fe047510705"
+    };
 
-    function showTab(t) {
-        document.querySelectorAll('.tab, .content').forEach(el => el.classList.remove('active'));
-        document.querySelector(`[onclick="showTab('${t}')"]`).classList.add('active');
-        document.getElementById(t).classList.add('active');
-        if(t === 'home') draw();
-        if(t === 'report') updateReport();
-    }
+    firebase.initializeApp(firebaseConfig);
+    const dbRef = firebase.database();
+    let db = { ops: [], exps: [] };
 
-    function toggleFields() {
-        let type = document.getElementById('type').value;
-        document.getElementById('other-detail-group').style.display = type === 'other' ? 'block' : 'none';
-        document.getElementById('standard-info').style.display = type === 'other' ? 'none' : 'block';
-        document.getElementById('target-group').style.display = type === 'other' ? 'none' : 'block';
-        document.getElementById('amt-label').innerText = type === 'other' ? "المبلغ" : "المبلغ المستلم";
-        calc();
-    }
-
-    function calc() {
-        let type = document.getElementById('type').value;
-        let a = parseFloat(document.getElementById('amt').value) || 0;
-        let p = parseFloat(document.getElementById('profit').value) || 0;
-        document.getElementById('target-label').innerText = type === 'in' ? "المبلغ المرسل" : "للعميل كاش";
-        document.getElementById('target').value = a - p;
-    }
-
-    function saveOp() {
-        let type = document.getElementById('type').value;
-        let op = {
-            id: Date.now(), type, name: document.getElementById('name').value,
-            phone: document.getElementById('phone').value || '-',
-            wallet: type === 'other' ? document.getElementById('other-detail').value : document.getElementById('wallet').value,
-            amt: parseFloat(document.getElementById('amt').value) || 0,
-            profit: type === 'other' ? 0 : (parseFloat(document.getElementById('profit').value) || 0),
-            target: type === 'other' ? parseFloat(document.getElementById('amt').value) : (parseFloat(document.getElementById('target').value) || 0),
-            status: document.getElementById('status').value,
-            date: new Date().toISOString().split('T')[0],
-            time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})
-        };
-        db.ops.unshift(op); save(); document.getElementById('op-form').reset(); toggleFields();
-    }
-
-    function draw() {
-        let q = document.getElementById('search').value.toLowerCase();
-        let f = document.getElementById('filter-status').value;
-        let h = '';
-        db.ops.filter(x => {
-            let st = x.status === 'done' ? 'done' : (x.type === 'in' || x.type === 'other' ? 'debt-us' : 'debt-on');
-            return (x.name.toLowerCase().includes(q) || x.phone.includes(q)) && (f === 'all' || f === st);
-        }).forEach(x => {
-            let sClass = x.status === 'done' ? 'status-done' : (x.type === 'in' || x.type === 'other' ? 'status-debt-us' : 'status-debt-on');
-            let sText = x.status === 'done' ? 'خالص' : (x.type === 'in' || x.type === 'other' ? `لنا: ${x.target}` : `علينا: ${x.target}`);
-            let typeLabel = x.type === 'in' ? 'إيداع' : (x.type === 'out' ? 'سحب' : 'أخرى');
-            let detailTxt = x.type === 'other' ? x.wallet : `${x.wallet} (${x.type==='in'?'مرسل:':'كاش:'} ${x.target})`;
-            
-            h += `<tr onclick="showFullDetails(${x.id})" style="cursor:pointer">
-                <td><b style="color:${x.type==='in'?'#27ae60':(x.type==='out'?'#e67e22':'#9b59b6')}">${typeLabel}</b></td>
-                <td><b>${x.name} (${x.phone})</b><span class="time-label">${x.date} | ${x.time}</span></td>
-                <td>${detailTxt} <div class="amount-detail">${x.amt} ج</div></td>
-                <td><span class="${sClass}">${sText}</span></td>
-                <td>
-                    ${x.status==='debt' ? `<button onclick="event.stopPropagation(); markAsDone(${x.id})">✅</button>` : ''}
-                    <button onclick="event.stopPropagation(); delOp(${x.id})">🗑</button>
-                </td>
-            </tr>`;
+    function initSync() {
+        dbRef.ref('data').on('value', (snapshot) => {
+            const remoteData = snapshot.val();
+            if (remoteData) {
+                db = remoteData;
+                if (typeof draw === 'function') draw();
+                if (typeof updateReport === 'function') updateReport();
+            }
         });
-        document.getElementById('table-body').innerHTML = h;
-        let eh = '';
-        db.exps.forEach(x => { eh += `<tr><td>${x.date}</td><td>${x.note}</td><td>${x.amt} ج</td><td><button onclick="delExp(${x.id})">🗑</button></td></tr>`; });
-        document.getElementById('expense-body').innerHTML = eh;
     }
 
-    function exportData() {
-        let blob = new Blob([JSON.stringify(db)], {type: "application/json"});
-        let a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-        a.download = `kiosk_backup_${new Date().toLocaleDateString()}.json`; a.click();
-    }
+    initSync();
 
-    function importData() {
-        let i = document.createElement('input'); i.type = 'file';
-        i.onchange = e => {
-            let r = new FileReader();
-            r.onload = f => { db = JSON.parse(f.target.result); save(); draw(); updateReport(); };
-            r.readAsText(e.target.files[0]);
-        }; i.click();
-    }
+    window.save = function() {
+        dbRef.ref('data').set(db).catch(err => console.error(err));
+        localStorage.setItem('kiosk_vfinal', JSON.stringify(db));
+    };
 
-    function showFullDetails(id) {
-    let x = db.ops.find(o => o.id === id);
-    let typeTxt = x.type === 'in' ? 'إيداع' : (x.type === 'out' ? 'سحب' : 'أخرى');
-    let detailLabel = x.type === 'other' ? 'البيان' : 'المحفظة';
-    
-    let msg = `تفاصيل العملية:
------------------
-النوع: ${typeTxt}
-العميل: ${x.name}
-الهاتف: ${x.phone}
-${detailLabel}: ${x.wallet}
-المبلغ الإجمالي: ${x.amt} ج`;
+    window.showTab = function(t) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.getElementById(t).classList.add('active');
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        const activeTab = document.querySelector(`[onclick="showTab('${t}')"]`);
+        if (activeTab) activeTab.classList.add('active');
+    };
 
-    if (x.type !== 'other') {
-        msg += `\nالعمولة: ${x.profit} ج
-${x.type === 'in' ? 'المبلغ المرسل' : 'كاش للعميل'}: ${x.target} ج`;
-    }
-
-    msg += `\nالحالة: ${x.status === 'done' ? 'خالصة' : 'دين'}
-التاريخ: ${x.date} | ${x.time}`;
-
-    alert(msg);
-}
-
-    function saveExp() {
-        let exp = { id: Date.now(), note: document.getElementById('exp-note').value, amt: parseFloat(document.getElementById('exp-amt').value) || 0, date: new Date().toISOString().split('T')[0] };
-        db.exps.unshift(exp); save(); document.getElementById('exp-note').value = ''; document.getElementById('exp-amt').value = '';
-    }
-
-    function updateReport() {
-        let targetDate = document.getElementById('rep-date').value;
-        let totalP = db.ops.reduce((a, b) => a + (b.status === 'done' ? b.profit : 0), 0);
-        let totalE = db.exps.reduce((a, b) => a + b.amt, 0);
-        document.getElementById('grand-net').innerText = (totalP - totalE).toFixed(2) + " ج";
-        let dP = db.ops.filter(i => i.date === targetDate).reduce((a, b) => a + (b.status === 'done' ? b.profit : 0), 0);
-        let dE = db.exps.filter(i => i.date === targetDate).reduce((a, b) => a + b.amt, 0);
-        document.getElementById('rep-profit').innerText = dP; document.getElementById('rep-exp').innerText = dE; document.getElementById('rep-net').innerText = dP - dE;
-    }
-
-    function markAsDone(id) { let i = db.ops.findIndex(x => x.id === id); db.ops[i].status = 'done'; save(); draw(); updateReport(); }
-    function resetMonth() { if(confirm("تصفير؟")) { db.ops = db.ops.filter(x => x.status === 'debt'); db.exps = []; save(); draw(); updateReport(); } }
-    function save() { localStorage.setItem('kiosk_vfinal', JSON.stringify(db)); alert("تم الحفظ!"); }
-    function delOp(id) { if(confirm('حذف؟')) { db.ops = db.ops.filter(x=>x.id!==id); save(); draw(); updateReport(); } }
-    function delExp(id) { if(confirm('حذف؟')) { db.exps = db.exps.filter(x=>x.id!==id); save(); draw(); updateReport(); } }
-    draw();
+    window.addEventListener('offline', () => alert('Offline Mode'));
+    window.addEventListener('online', () => {
+        save();
+    });
 </script>
 </body>
 </html>
