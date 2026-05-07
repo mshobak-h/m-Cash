@@ -146,8 +146,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
 <script>
+    // 1. إعدادات Firebase (تم استخراجها من صورك)
     const firebaseConfig = {
-        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZm...", 
+        apiKey: "AIzaSyDt86JtDZOXW1ojYrBVCWZmC8M0pW...", // أضف الكود كاملاً هنا
         authDomain: "mmcash-bd27b.firebaseapp.com",
         databaseURL: "https://mmcash-bd27b-default-rtdb.firebaseio.com",
         projectId: "mmcash-bd27b",
@@ -156,26 +157,35 @@
 
     firebase.initializeApp(firebaseConfig);
     const dbRef = firebase.database();
-    let db = { ops: [], exps: [] };
 
+    // 2. المزامنة وجلب البيانات عند الفتح
     function initSync() {
         dbRef.ref('data').on('value', (snapshot) => {
             const remoteData = snapshot.val();
             if (remoteData) {
-                db = remoteData;
+                db = remoteData; 
                 if (typeof draw === 'function') draw();
                 if (typeof updateReport === 'function') updateReport();
             }
         });
     }
-
+    
     initSync();
 
+    // 3. دالة الحفظ (التي يستدعيها زر "حفظ العملية")
     window.save = function() {
-        dbRef.ref('data').set(db).catch(err => console.error(err));
+        if (!db) db = { ops: [], exps: [] };
+        
+        // الحفظ في السحاب (Firebase)
+        dbRef.ref('data').set(db)
+            .then(() => console.log("تم الحفظ بنجاح"))
+            .catch(err => console.error("خطأ في السحاب:", err));
+            
+        // الحفظ في ذاكرة الهاتف (Offline)
         localStorage.setItem('kiosk_vfinal', JSON.stringify(db));
     };
 
+    // 4. دالة التنقل بين الأقسام (Tabs)
     window.showTab = function(t) {
         document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
         document.getElementById(t).classList.add('active');
@@ -184,10 +194,8 @@
         if (activeTab) activeTab.classList.add('active');
     };
 
-    window.addEventListener('offline', () => alert('Offline Mode'));
+    // مزامنة تلقائية عند عودة الإنترنت
     window.addEventListener('online', () => {
         save();
     });
 </script>
-</body>
-</html>
